@@ -1,335 +1,356 @@
-import React from 'react';
-import PropTypes from 'prop-types';
-import ReactDOM from 'react-dom';
-import Chart from 'chart.js';
-import isEqual from 'lodash.isequal';
+import React from "react";
+import PropTypes from "prop-types";
+import ReactDOM from "react-dom";
+import Chart from "chart.js";
+import isEqual from "lodash.isequal";
+import moize from "moize";
+
+const datasetKeyProvider = d => d.label;
+const datasetKeyProviderMemoized = moize(datasetKeyProvider);
 
 class ChartComponent extends React.Component {
-  static getLabelAsKey = d => d.label;
-  
-  static propTypes = {
-    data: PropTypes.oneOfType([
-    	PropTypes.object,
-    	PropTypes.func
-    ]).isRequired,
-    getDatasetAtEvent: PropTypes.func,
-    getElementAtEvent: PropTypes.func,
-    getElementsAtEvent: PropTypes.func,
-    height: PropTypes.number,
-    legend: PropTypes.object,
-    onElementsClick: PropTypes.func,
-    options: PropTypes.object,
-    plugins: PropTypes.arrayOf(PropTypes.object),
-    redraw: PropTypes.bool,
-    type: PropTypes.oneOf(['doughnut', 'pie', 'line', 'bar', 'horizontalBar', 'radar', 'polarArea', 'bubble']),
-    width: PropTypes.number,
-    datasetKeyProvider: PropTypes.func
-  }
+	static defaultProps = {
+		legend: {
+			display: true,
+			position: 'bottom'
+		},
+		type: 'doughnut',
+		height: 150,
+		width: 300,
+		redraw: false,
+		options: {},
+		datasetKeyProvider: datasetKeyProviderMemoized
+	}
+	static propTypes = {
+		data: PropTypes.oneOfType([
+			PropTypes.object,
+			PropTypes.func
+		]).isRequired,
+		getDatasetAtEvent: PropTypes.func,
+		getElementAtEvent: PropTypes.func,
+		getElementsAtEvent: PropTypes.func,
+		height: PropTypes.number,
+		legend: PropTypes.object,
+		onElementsClick: PropTypes.func,
+		options: PropTypes.object,
+		plugins: PropTypes.arrayOf(PropTypes.object),
+		redraw: PropTypes.bool,
+		type: PropTypes.oneOf(['doughnut', 'pie', 'line', 'bar', 'horizontalBar', 'radar', 'polarArea', 'bubble']),
+		width: PropTypes.number,
+		datasetKeyProvider: PropTypes.func
+	}
+	handleOnClick = (event) => {
+		const instance = this.chart_instance;
 
-  static defaultProps = {
-    legend: {
-      display: true,
-      position: 'bottom'
-    },
-    type: 'doughnut',
-    height: 150,
-    width: 300,
-    redraw: false,
-    options: {},
-    datasetKeyProvider: ChartComponent.getLabelAsKey
-  }
+		const {
+			getDatasetAtEvent,
+			getElementAtEvent,
+			getElementsAtEvent,
+			onElementsClick
+		} = this.props;
 
-  componentWillMount() {
-    this.chart_instance = undefined;
-  }
+		getDatasetAtEvent && getDatasetAtEvent(instance.getDatasetAtEvent(event), event);
+		getElementAtEvent && getElementAtEvent(instance.getElementAtEvent(event), event);
+		getElementsAtEvent && getElementsAtEvent(instance.getElementsAtEvent(event), event);
+		onElementsClick && onElementsClick(instance.getElementsAtEvent(event), event); // Backward compatibility
+	}
+	handleOnClick = (event) => {
+		const instance = this.chart_instance;
 
-  componentDidMount() {
-    this.renderChart();
-  }
+		const {
+			getDatasetAtEvent,
+			getElementAtEvent,
+			getElementsAtEvent,
+			onElementsClick
+		} = this.props;
 
-  componentDidUpdate() {
-    if (this.props.redraw) {
-      this.chart_instance.destroy();
-      this.renderChart();
-      return;
-    }
+		getDatasetAtEvent && getDatasetAtEvent(instance.getDatasetAtEvent(event), event);
+		getElementAtEvent && getElementAtEvent(instance.getElementAtEvent(event), event);
+		getElementsAtEvent && getElementsAtEvent(instance.getElementsAtEvent(event), event);
+		onElementsClick && onElementsClick(instance.getElementsAtEvent(event), event); // Backward compatibility
+	}
 
-    this.updateChart();
-  }
+	componentWillMount() {
+		this.chart_instance = undefined;
+	}
 
-  shouldComponentUpdate(nextProps) {
-    const {
-      redraw,
-      type,
-      options,
-      plugins,
-      legend,
-      height,
-      width
-    } = this.props;
+	componentDidMount() {
+		this.renderChart();
+	}
 
-    if (nextProps.redraw === true) {
-      return true;
-    }
+	componentWillUpdate() {
+		if (this.props.redraw) {
+			this.chart_instance.destroy();
+		}
+	}
 
-    if (height !== nextProps.height || width !== nextProps.width) {
-      return true;
-    }
+	componentDidUpdate() {
+		if (this.props.redraw) {
+			this.renderChart();
+			return;
+		}
 
-    if (type !== nextProps.type) {
-      return true;
-    }
+		this.updateChart();
+	}
 
-    if (!isEqual(legend, nextProps.legend)) {
-      return true;
-    }
+	shouldComponentUpdate(nextProps) {
+		const {
+			redraw,
+			type,
+			options,
+			plugins,
+			legend,
+			height,
+			width
+		} = this.props;
 
-    if (!isEqual(options, nextProps.options)) {
-      return true;
-    }
+		if (nextProps.redraw === true) {
+			return true;
+		}
 
-    const nextData = this.transformDataProp(nextProps);
+		if (height !== nextProps.height || width !== nextProps.width) {
+			return true;
+		}
 
-	  if( !isEqual(this.shadowDataProp, nextData)) {
-		  return true;
-	  }
+		if (type !== nextProps.type) {
+			return true;
+		}
 
-    return !isEqual(plugins, nextProps.plugins);
+		if (!isEqual(legend, nextProps.legend)) {
+			return true;
+		}
+
+		if (!isEqual(options, nextProps.options)) {
+			return true;
+		}
+
+		const nextData = this.transformDataProp(nextProps);
+
+		if (!isEqual(this.shadowDataProp, nextData)) {
+			return true;
+		}
+
+		return !isEqual(plugins, nextProps.plugins);
 
 
-  }
+	}
 
-  componentWillUnmount() {
-    this.chart_instance.destroy();
-  }
+	componentWillUnmount() {
+		this.chart_instance.destroy();
+	}
 
-  transformDataProp(props) {
-    const { data } = props;
-    if (typeof(data) == 'function') {
-      const node = ReactDOM.findDOMNode(this);
-      return data(node);
-    } else {
-      return data;
-    }
-  }
+	// Chart.js directly mutates the data.dataset objects by adding _meta proprerty
+	// this makes impossible to compare the current and next data changes
+	// therefore we memoize the data prop while sending a fake to Chart.js for mutation.
 
-  // Chart.js directly mutates the data.dataset objects by adding _meta proprerty
-  // this makes impossible to compare the current and next data changes
-  // therefore we memoize the data prop while sending a fake to Chart.js for mutation.
-  // see https://github.com/chartjs/Chart.js/blob/master/src/core/core.controller.js#L615-L617
-  memoizeDataProps() {
-    if (!this.props.data) {
-      return;
-    }
+	transformDataProp(props) {
+		const {data} = props;
+		if (typeof(data) == 'function') {
+			const node = ReactDOM.findDOMNode(this);
+			return data(node);
+		} else {
+			return data;
+		}
+	}
 
-    const data = this.transformDataProp(this.props);
+	// see https://github.com/chartjs/Chart.js/blob/master/src/core/core.controller.js#L615-L617
+	memoizeDataProps() {
+		if (!this.props.data) {
+			return;
+		}
 
-    this.shadowDataProp = {
-      ...data,
-      datasets: data.datasets && data.datasets.map(set => {
-        return {
-            ...set
-        };
-      })
-    };
+		const data = this.transformDataProp(this.props);
 
-    return data;
-  }
+		this.shadowDataProp = {
+			...data,
+			datasets: data.datasets && data.datasets.map(set => {
+				return {
+					...set
+				};
+			})
+		};
 
-  updateChart() {
-    const {options} = this.props;
+		return data;
+	}
 
-    const data = this.memoizeDataProps(this.props);
+	updateChart() {
+		const {options} = this.props;
 
-    if (!this.chart_instance) return;
+		const data = this.memoizeDataProps(this.props);
 
-    if (options) {
-      this.chart_instance.options = Chart.helpers.configMerge(this.chart_instance.options, options);
-    }
+		if (!this.chart_instance) return;
 
-    // Pipe datasets to chart instance datasets enabling
-    // seamless transitions
-    let currentDatasets = (this.chart_instance.config.data && this.chart_instance.config.data.datasets) || [];
-    const nextDatasets = data.datasets || [];
+		if (options) {
+			this.chart_instance.options = Chart.helpers.configMerge(this.chart_instance.options, options);
+		}
 
-	  // use the key provider to work out which series have been added/removed/changed
-	  const currentDatasetKeys = currentDatasets.map(this.props.datasetKeyProvider);
-	  const nextDatasetKeys = nextDatasets.map(this.props.datasetKeyProvider);
-	  const newDatasets = nextDatasets.filter(d => currentDatasetKeys.indexOf(this.props.datasetKeyProvider(d)) === -1);
+		// Pipe datasets to chart instance datasets enabling
+		// seamless transitions
+		let currentDatasets = (this.chart_instance.config.data && this.chart_instance.config.data.datasets) || [];
+		const nextDatasets = data.datasets || [];
 
-	  // process the updates (via a reverse for loop so we can safely splice deleted datasets out of the array
-	  for (let idx = currentDatasets.length - 1; idx >= 0; idx -= 1) {
+		// use the key provider to work out which series have been added/removed/changed
+		const currentDatasetKeys = currentDatasets.map(this.props.datasetKeyProvider);
+		const nextDatasetKeys = nextDatasets.map(this.props.datasetKeyProvider);
+		const newDatasets = nextDatasets.filter(d => currentDatasetKeys.indexOf(this.props.datasetKeyProvider(d)) === -1);
+
+		// process the updates (via a reverse for loop so we can safely splice deleted datasets out of the array
+		for (let idx = currentDatasets.length - 1; idx >= 0; idx -= 1) {
 			const currentDatasetKey = this.props.datasetKeyProvider(currentDatasets[idx]);
 			if (nextDatasetKeys.indexOf(currentDatasetKey) === -1) {
-			  // deleted series
-			  currentDatasets.splice(idx, 1);
-		  } else {
-			  const retainedDataset = nextDatasets.find(d => this.props.datasetKeyProvider(d) === currentDatasetKey);
-			  if (retainedDataset) {
-				  // update it in place if it is a retained dataset
-				  currentDatasets[idx].data.splice(retainedDataset.data.length);
-				  retainedDataset.data.forEach((point, pid) => {
-					  currentDatasets[idx].data[pid] = retainedDataset.data[pid];
-				  });
-				  const {data, ...otherProps} = retainedDataset;
-				  currentDatasets[idx] = {
-					  data: currentDatasets[idx].data,
-					  ...currentDatasets[idx],
-					  ...otherProps
-				  };
-			  }
-		  }
-	  }
-	  // finally add any new series
-	  newDatasets.forEach(d => currentDatasets.push(d));
-    const { datasets, ...rest } = data;
+				// deleted series
+				currentDatasets.splice(idx, 1);
+			} else {
+				const retainedDataset = nextDatasets.find(d => this.props.datasetKeyProvider(d) === currentDatasetKey);
+				if (retainedDataset) {
+					// update it in place if it is a retained dataset
+					currentDatasets[idx].data.splice(retainedDataset.data.length);
+					retainedDataset.data.forEach((point, pid) => {
+						currentDatasets[idx].data[pid] = retainedDataset.data[pid];
+					});
+					const {data, ...otherProps} = retainedDataset;
+					currentDatasets[idx] = {
+						data: currentDatasets[idx].data,
+						...currentDatasets[idx],
+						...otherProps
+					};
+				}
+			}
+		}
+		// finally add any new series
+		newDatasets.forEach(d => currentDatasets.push(d));
+		const {datasets, ...rest} = data;
 
-    this.chart_instance.config.data = {
-      ...this.chart_instance.config.data,
-      ...rest
-    };
+		this.chart_instance.config.data = {
+			...this.chart_instance.config.data,
+			...rest
+		};
 
-    this.chart_instance.update();
-  }
+		this.chart_instance.update();
+	}
 
-  renderChart() {
-    const {options, legend, type, redraw, plugins} = this.props;
-    const node = ReactDOM.findDOMNode(this);
-    const data = this.memoizeDataProps();
+	renderChart() {
+		const {options, legend, type, redraw, plugins} = this.props;
+		const node = ReactDOM.findDOMNode(this);
+		const data = this.memoizeDataProps();
 
-    this.chart_instance = new Chart(node, {
-      type,
-      data,
-      options,
-      plugins
-    });
-  }
+		this.chart_instance = new Chart(node, {
+			type,
+			data,
+			options,
+			plugins
+		});
+	}
 
-  handleOnClick = (event) => {
-    const instance = this.chart_instance;
+	render() {
+		const {height, width, onElementsClick} = this.props;
 
-    const {
-      getDatasetAtEvent,
-      getElementAtEvent,
-      getElementsAtEvent,
-      onElementsClick
-    } = this.props;
-
-    getDatasetAtEvent && getDatasetAtEvent(instance.getDatasetAtEvent(event), event);
-    getElementAtEvent && getElementAtEvent(instance.getElementAtEvent(event), event);
-    getElementsAtEvent && getElementsAtEvent(instance.getElementsAtEvent(event), event);
-    onElementsClick && onElementsClick(instance.getElementsAtEvent(event), event); // Backward compatibility
-  }
-
-  render() {
-    const {height, width, onElementsClick} = this.props;
-
-    return (
-      <canvas
-        height={height}
-        width={width}
-        onClick={this.handleOnClick}
-      />
-    );
-  }
+		return (
+			<canvas
+				height={height}
+				width={width}
+				onClick={this.handleOnClick}
+			/>
+		);
+	}
 }
 
 export default ChartComponent;
 
 export class Doughnut extends React.Component {
-  render() {
-    return (
-      <ChartComponent
-        {...this.props}
-        ref={ref => this.chart_instance = ref && ref.chart_instance}
-        type='doughnut'
-      />
-    );
-  }
+	render() {
+		return (
+			<ChartComponent
+				{...this.props}
+				ref={ref => this.chart_instance = ref && ref.chart_instance}
+				type='doughnut'
+			/>
+		);
+	}
 }
 
 export class Pie extends React.Component {
-  render() {
-    return (
-      <ChartComponent
-        {...this.props}
-        ref={ref => this.chart_instance = ref && ref.chart_instance}
-        type='pie'
-      />
-    );
-  }
+	render() {
+		return (
+			<ChartComponent
+				{...this.props}
+				ref={ref => this.chart_instance = ref && ref.chart_instance}
+				type='pie'
+			/>
+		);
+	}
 }
 
 export class Line extends React.Component {
-  render() {
-    return (
-      <ChartComponent
-        {...this.props}
-        ref={ref => this.chart_instance = ref && ref.chart_instance}
-        type='line'
-      />
-    );
-  }
+	render() {
+		return (
+			<ChartComponent
+				{...this.props}
+				ref={ref => this.chart_instance = ref && ref.chart_instance}
+				type='line'
+			/>
+		);
+	}
 }
 
 export class Bar extends React.Component {
-  render() {
-    return (
-      <ChartComponent
-        {...this.props}
-        ref={ref => this.chart_instance = ref && ref.chart_instance}
-        type='bar'
-      />
-    );
-  }
+	render() {
+		return (
+			<ChartComponent
+				{...this.props}
+				ref={ref => this.chart_instance = ref && ref.chart_instance}
+				type='bar'
+			/>
+		);
+	}
 }
 
 export class HorizontalBar extends React.Component {
-  render() {
-    return (
-      <ChartComponent
-        {...this.props}
-        ref={ref => this.chart_instance = ref && ref.chart_instance}
-        type='horizontalBar'
-      />
-    );
-  }
+	render() {
+		return (
+			<ChartComponent
+				{...this.props}
+				ref={ref => this.chart_instance = ref && ref.chart_instance}
+				type='horizontalBar'
+			/>
+		);
+	}
 }
 
 export class Radar extends React.Component {
-  render() {
-    return (
-      <ChartComponent
-        {...this.props}
-        ref={ref => this.chart_instance = ref && ref.chart_instance}
-        type='radar'
-      />
-    );
-  }
+	render() {
+		return (
+			<ChartComponent
+				{...this.props}
+				ref={ref => this.chart_instance = ref && ref.chart_instance}
+				type='radar'
+			/>
+		);
+	}
 }
 
 export class Polar extends React.Component {
-  render() {
-    return (
-      <ChartComponent
-        {...this.props}
-        ref={ref => this.chart_instance = ref && ref.chart_instance}
-        type='polarArea'
-      />
-    );
-  }
+	render() {
+		return (
+			<ChartComponent
+				{...this.props}
+				ref={ref => this.chart_instance = ref && ref.chart_instance}
+				type='polarArea'
+			/>
+		);
+	}
 }
 
 export class Bubble extends React.Component {
-  render() {
-    return (
-      <ChartComponent
-        {...this.props}
-        ref={ref => this.chart_instance = ref && ref.chart_instance}
-        type='bubble'
-      />
-    );
-  }
+	render() {
+		return (
+			<ChartComponent
+				{...this.props}
+				ref={ref => this.chart_instance = ref && ref.chart_instance}
+				type='bubble'
+			/>
+		);
+	}
 }
 
 export const defaults = Chart.defaults;

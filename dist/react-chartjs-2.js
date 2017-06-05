@@ -2013,6 +2013,1356 @@ module.exports = isEqual;
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
 },{}],5:[function(require,module,exports){
+'use strict';
+
+exports.__esModule = true;
+
+var _constants = require('./constants');
+
+var _utils = require('./utils');
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+// constants
+
+
+// utils
+
+
+// types
+
+
+/**
+ * @class Cache
+ * @classdesc class that mimics parts of the Map infrastructure, but faster
+ */
+var Cache = function () {
+  function Cache() {
+    _classCallCheck(this, Cache);
+
+    this[_constants.CACHE_IDENTIFIER] = true;
+    this.lastItem = undefined;
+    this.list = [];
+    this.size = 0;
+  }
+  // $FlowIgnore computed properties not yet supported on classes
+
+
+  /**
+   * @function clear
+   * @memberof Cache
+   * @instance
+   *
+   * @description
+   * remove all keys from the map
+   */
+  Cache.prototype.clear = function clear() {
+    this.list.length = 0;
+
+    this.setLastItem();
+  };
+
+  /**
+   * @function delete
+   * @memberof Cache
+   * @instance
+   *
+   * @description
+   * remove the key from the map
+   *
+   * @param {*} key key to delete from the map
+   */
+
+
+  Cache.prototype.delete = function _delete(key) {
+    var index = (0, _utils.getIndexOfKey)(this, key);
+
+    if (~index) {
+      (0, _utils.splice)(this.list, index);
+
+      this.setLastItem(this.list[0]);
+    }
+  };
+
+  /**
+   * @function get
+   * @memberof Cache
+   * @instance
+   *
+   * @description
+   * get the value for the given key
+   *
+   * @param {*} key key to get the value for
+   * @returns {*} value at the key location
+   */
+
+
+  Cache.prototype.get = function get(key) {
+    if (!this.lastItem) {
+      return undefined;
+    }
+
+    if (key === this.lastItem.key) {
+      return this.lastItem.value;
+    }
+
+    var index = (0, _utils.getIndexOfKey)(this, key);
+
+    if (~index) {
+      var item = this.list[index];
+
+      this.setLastItem((0, _utils.unshift)((0, _utils.splice)(this.list, index), item));
+
+      return item.value;
+    }
+  };
+
+  /**
+   * @function getKeyIterator
+   * @memberof Cache
+   * @instance
+   *
+   * @description
+   * create a custom iterator for the keys in the list
+   *
+   * @returns {{next: (function(): Object)}} iterator instance
+   */
+
+
+  Cache.prototype.getKeyIterator = function getKeyIterator() {
+    var _this = this;
+
+    var index = -1;
+
+    return {
+      next: function next() {
+        return ++index >= _this.size ? _constants.ITERATOR_DONE_OBJECT : {
+          index: index,
+          isMultiParamKey: _this.list[index].isMultiParamKey,
+          key: _this.list[index].key
+        };
+      }
+    };
+  };
+
+  /**
+   * @function has
+   * @memberof Cache
+   * @instance
+   *
+   * @description
+   * does the map have the key provided
+   *
+   * @param {*} key key to test for in the map
+   * @returns {boolean} does the map have the key
+   */
+
+
+  Cache.prototype.has = function has(key) {
+    // $FlowIgnore: this.lastItem exists
+    return this.size !== 0 && (key === this.lastItem.key || !!~(0, _utils.getIndexOfKey)(this, key));
+  };
+
+  /**
+   * @function set
+   * @memberof Cache
+   * @instance
+   *
+   * @description
+   * set the value at the key location, or add a new item with that key value
+   *
+   * @param {*} key key to assign value of
+   * @param {*} value value to store in the map at key
+   */
+
+
+  Cache.prototype.set = function set(key, value) {
+    this.setLastItem((0, _utils.unshift)(this.list, {
+      key: key,
+      isMultiParamKey: !!(key && key.isMultiParamKey),
+      value: value
+    }));
+  };
+
+  /**
+   * @function setLastItem
+   * @memberof Cache
+   * @instance
+   *
+   * @description
+   * assign the lastItem
+   *
+   * @param {ListItem|undefined} lastItem the item to assign
+   */
+
+
+  Cache.prototype.setLastItem = function setLastItem(lastItem) {
+    this.lastItem = lastItem;
+    this.size = this.list.length;
+  };
+
+  /**
+   * @function updateItem
+   * @memberof Cache
+   * @instance
+   *
+   * @description
+   * update an item in-place with a new value
+   *
+   * @param {*} key key to update value of
+   * @param {*} value value to store in the map at key
+   */
+
+
+  Cache.prototype.updateItem = function updateItem(key, value) {
+    var index = (0, _utils.getIndexOfKey)(this, key);
+
+    if (~index) {
+      this.list[index].value = value;
+
+      if (this.lastItem && key === this.lastItem.key) {
+        this.lastItem.value = value;
+      }
+    }
+  };
+
+  return Cache;
+}();
+
+exports.default = Cache;
+module.exports = exports['default'];
+},{"./constants":6,"./utils":8}],6:[function(require,module,exports){
+'use strict';
+
+exports.__esModule = true;
+
+
+/**
+ * @private
+ *
+ * @constant {number} INFINITY
+ * @default
+ */
+var INFINITY = exports.INFINITY = Number.POSITIVE_INFINITY;
+
+/**
+ * @private
+ *
+ * @constant {string} INVALID_FIRST_PARAMETER_ERROR
+ * @default
+ */
+// types
+var INVALID_FIRST_PARAMETER_ERROR = exports.INVALID_FIRST_PARAMETER_ERROR = 'You must pass either a function or an object of options as the first parameter to moize.';
+
+/**
+ * @private
+ *
+ * @constant {string} NO_PROMISE_LIBRARY_EXISTS_ERROR_MESSAGE
+ * @default
+ */
+var NO_PROMISE_LIBRARY_EXISTS_ERROR_MESSAGE = exports.NO_PROMISE_LIBRARY_EXISTS_ERROR_MESSAGE = 'You have not specified a promiseLibrary, and it appears that your browser does not support ' + 'native promises. You can either assign the library you are using to the global Promise object, or pass ' + 'the library in options via the "promiseLibrary" property.';
+
+/**
+ * @private
+ *
+ * @constant {IteratorDone} ITERATOR_DONE_OBJECT
+ */
+var ITERATOR_DONE_OBJECT = exports.ITERATOR_DONE_OBJECT = {
+  done: true
+};
+
+/**
+ * @private
+ *
+ * @constant {string|symbol} CACHE_IDENTIFIER
+ * @default
+ */
+var CACHE_IDENTIFIER = exports.CACHE_IDENTIFIER = typeof Symbol === 'function' ? Symbol('isMoizeCache') : '__IS_MOIZE_CACHE__';
+
+/**
+ * @private
+ *
+ * @constant {string} ARRAY_OBJECT_CLASS
+ * @default
+ */
+var ARRAY_OBJECT_CLASS = exports.ARRAY_OBJECT_CLASS = '[object Array]';
+
+/**
+ * @private
+ *
+ * @constant {string} FUNCTION_TYPEOF
+ * @default
+ */
+var FUNCTION_TYPEOF = exports.FUNCTION_TYPEOF = 'function';
+
+/**
+ * @private
+ *
+ * @constant {RegExp} FUNCTION_NAME_REGEXP
+ */
+var FUNCTION_NAME_REGEXP = exports.FUNCTION_NAME_REGEXP = /^\s*function\s+([^\(\s]*)\s*/;
+
+/**
+ * @private
+ *
+ * @constant {string} OBJECT_TYPEOF
+ * @default
+ */
+var OBJECT_TYPEOF = exports.OBJECT_TYPEOF = 'object';
+
+/**
+ * @private
+ *
+ * @constant {Array<Object>} GOTCHA_OBJECT_CLASSES
+ */
+var GOTCHA_OBJECT_CLASSES = exports.GOTCHA_OBJECT_CLASSES = [Boolean, Date, Number, RegExp, String];
+
+/**
+ * @private
+ *
+ * @constant {Array<string>} STATIC_PROPERTIES_TO_PASS
+ */
+var STATIC_PROPERTIES_TO_PASS = exports.STATIC_PROPERTIES_TO_PASS = ['contextTypes', 'defaultProps', 'propTypes'];
+
+/**
+ * @private
+ *
+ * @constant {number} STATIC_PROPERTIES_TO_PASS_LENGTH
+ */
+var STATIC_PROPERTIES_TO_PASS_LENGTH = exports.STATIC_PROPERTIES_TO_PASS_LENGTH = STATIC_PROPERTIES_TO_PASS.length;
+},{}],7:[function(require,module,exports){
+'use strict';
+
+exports.__esModule = true;
+
+var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
+// cache
+
+
+// constants
+
+
+// utils
+
+
+// types
+
+
+var _Cache = require('./Cache');
+
+var _Cache2 = _interopRequireDefault(_Cache);
+
+var _constants = require('./constants');
+
+var _utils = require('./utils');
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+/**
+ * @module moize
+ */
+
+/**
+ * @constant {{isPromise: true}} PROMISE_OPTIONS
+ */
+var PROMISE_OPTIONS = {
+  isPromise: true
+};
+
+/**
+ * @constant {{maxArgs: number, serialize: boolean, serializeFunctions: boolean}} REACT_OPTIONS
+ */
+var REACT_OPTIONS = {
+  maxArgs: 2,
+  serialize: true,
+  serializeFunctions: true
+};
+
+/**
+ * @constant {{serialize: boolean}} SERIALIZE_OPTIONS
+ */
+var SERIALIZE_OPTIONS = {
+  serialize: true
+};
+
+/**
+ * @function moize
+ *
+ * @description
+ * store cached values returned from calling method with arguments to avoid reprocessing data from same arguments
+ *
+ * @example
+ * import moize from 'moize';
+ *
+ * // standard implementation
+ * const fn = (foo, bar) => {
+ *  return `${foo} ${bar}`;
+ * };
+ * const memoizedFn = moize(fn);
+ *
+ * // implementation with options
+ * const fn = async (id) => {
+ *  return get(`http://foo.com/${id}`);
+ * };
+ * const memoizedFn = moize(fn, {
+ *  isPromise: true,
+ *  maxSize: 5
+ * });
+ *
+ * @param {function} functionOrComposableOptions method to memoize
+ * @param {Options} [passedOptions={}] options to customize how the caching is handled
+ * @param {Cache} [passedOptions.cache=new Cache()] caching mechanism to use for method
+ * @param {boolean} [passedOptions.isPromise=false] is the function return expected to be a promise to resolve
+ * @param {number} [passedOptions.maxAge=Infinity] the maximum age the value should persist in cache
+ * @param {number} [passedOptions.maxArgs=Infinity] the maximum number of arguments to be used in serializing the keys
+ * @param {number} [passedOptions.maxSize=Infinity] the maximum size of the cache to retain
+ * @param {function} [passedOptions.promiseLibrary=Promise] promise library to use for resolution / rejection
+ * @param {function} [passedOptions.serializeFunctions=false] should function parameters be serialized as well
+ * @param {function} [passedOptions.serializer] method to serialize arguments with for cache storage
+ * @returns {Function} higher-order function which either returns from cache or newly-computed value
+ */
+var moize = function moize(functionOrComposableOptions) {
+  var passedOptions = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+
+  if ((0, _utils.isPlainObject)(functionOrComposableOptions)) {
+    return function (fn) {
+      var otherOptions = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+
+      return moize(fn, _extends({}, functionOrComposableOptions, otherOptions));
+    };
+  }
+
+  if (!(0, _utils.isFunction)(functionOrComposableOptions)) {
+    throw new TypeError(_constants.INVALID_FIRST_PARAMETER_ERROR);
+  }
+
+  var isComposed = functionOrComposableOptions.isMemoized;
+  // $FlowIgnore the value of the property is a function
+  var fn = isComposed ? functionOrComposableOptions.originalFunction : functionOrComposableOptions;
+  var options = !isComposed ? passedOptions : _extends({}, functionOrComposableOptions.options, passedOptions);
+
+  var _options$cache = options.cache,
+      cache = _options$cache === undefined ? new _Cache2.default() : _options$cache,
+      _options$isPromise = options.isPromise,
+      isPromise = _options$isPromise === undefined ? false : _options$isPromise,
+      _options$maxAge = options.maxAge,
+      maxAge = _options$maxAge === undefined ? _constants.INFINITY : _options$maxAge,
+      _options$maxArgs = options.maxArgs,
+      maxArgs = _options$maxArgs === undefined ? _constants.INFINITY : _options$maxArgs,
+      _options$maxSize = options.maxSize,
+      maxSize = _options$maxSize === undefined ? _constants.INFINITY : _options$maxSize,
+      _options$promiseLibra = options.promiseLibrary,
+      promiseLibrary = _options$promiseLibra === undefined ? Promise : _options$promiseLibra,
+      _options$serialize = options.serialize,
+      serialize = _options$serialize === undefined ? false : _options$serialize,
+      _options$serializeFun = options.serializeFunctions,
+      serializeFunctions = _options$serializeFun === undefined ? false : _options$serializeFun,
+      serializer = options.serializer;
+
+
+  if (isPromise && !promiseLibrary) {
+    throw new ReferenceError(_constants.NO_PROMISE_LIBRARY_EXISTS_ERROR_MESSAGE);
+  }
+
+  var addPropertiesToFunction = (0, _utils.createAddPropertiesToFunction)(cache, fn, options);
+  var getCacheKey = (0, _utils.createGetCacheKey)(cache, serialize, serializer, serializeFunctions, maxArgs);
+  var setNewCachedValue = (0, _utils.createSetNewCachedValue)(cache, isPromise, maxAge, maxSize, promiseLibrary);
+
+  var key = void 0;
+
+  /**
+   * @private
+   *
+   * @function memoizedFunction
+   *
+   * @description
+   * higher-order function which either returns from cache or stores newly-computed value and returns it
+   *
+   * @param {Array<*>} args arguments passed to method
+   * @returns {any} value resulting from executing of fn passed to memoize
+   */
+  var memoizedFunction = function memoizedFunction() {
+    for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+      args[_key] = arguments[_key];
+    }
+
+    key = getCacheKey(args);
+
+    return cache.has(key) ? cache.get(key) : setNewCachedValue(key, fn.apply(this, args));
+  };
+
+  return addPropertiesToFunction(memoizedFunction);
+};
+
+moize.compose = _utils.compose;
+moize.maxAge = (0, _utils.createCurriableOptionMethod)(moize, 'maxAge');
+moize.maxArgs = (0, _utils.createCurriableOptionMethod)(moize, 'maxArgs');
+moize.maxSize = (0, _utils.createCurriableOptionMethod)(moize, 'maxSize');
+moize.promise = moize(PROMISE_OPTIONS);
+moize.react = moize(REACT_OPTIONS);
+moize.serialize = moize(SERIALIZE_OPTIONS);
+moize.simple = moize.maxSize(1);
+
+exports.default = moize;
+module.exports = exports['default'];
+},{"./Cache":5,"./constants":6,"./utils":8}],8:[function(require,module,exports){
+'use strict';
+
+exports.__esModule = true;
+exports.createSetNewCachedValue = exports.createPromiseResolver = exports.createPromiseRejecter = exports.createSetExpirationOfCache = exports.createGetCacheKey = exports.getSerializerFunction = exports.createArgumentSerializer = exports.getStringifiedArgument = exports.stringify = exports.getIndexOfKey = exports.isFiniteAndPositive = exports.createAddPropertiesToFunction = exports.getMultiParamKey = exports.isKeyShallowEqualWithArgs = exports.deleteItemFromCache = exports.decycle = exports.customReplacer = exports.isValueObjectOrArray = exports.isPlainObject = exports.isFunction = exports.isComplexObject = exports.isArray = exports.isArrayFallback = exports.getFunctionName = exports.getFunctionNameViaRegexp = exports.createPluckFromInstanceList = exports.createCurriableOptionMethod = exports.isCache = exports.unshift = exports.splice = exports.every = exports.compose = exports.addStaticPropertiesToFunction = exports.toString = exports.keys = exports.jsonStringify = undefined;
+
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
+
+// cache
+
+
+// constants
+
+
+var _Cache = require('./Cache');
+
+var _Cache2 = _interopRequireDefault(_Cache);
+
+var _constants = require('./constants');
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+// types
+var jsonStringify = exports.jsonStringify = JSON.stringify;
+var keys = exports.keys = Object.keys;
+var toString = exports.toString = Object.prototype.toString;
+
+/**
+ * @private
+ *
+ * @function addStaticPropertiesToFunction
+ *
+ * @description
+ * add static properties to the memoized function if they exist on the original
+ *
+ * @param {function} originalFunction the function to be memoized
+ * @param {function} memoizedFn the higher-order memoized function
+ * @returns {function} memoizedFn with static properties added
+ */
+var addStaticPropertiesToFunction = exports.addStaticPropertiesToFunction = function addStaticPropertiesToFunction(originalFunction, memoizedFn) {
+  var index = _constants.STATIC_PROPERTIES_TO_PASS_LENGTH,
+      property = void 0;
+
+  while (index--) {
+    property = _constants.STATIC_PROPERTIES_TO_PASS[index];
+
+    if (originalFunction[property]) {
+      memoizedFn[property] = originalFunction[property];
+    }
+  }
+
+  return memoizedFn;
+};
+
+/**
+ * @private
+ *
+ * @function compose
+ *
+ * @description
+ * method to compose functions and return a single function
+ *
+ * @param {...Array<function>} functions the functions to compose
+ * @returns {function(...Array<*>): *} the composed function
+ */
+var compose = exports.compose = function compose() {
+  for (var _len = arguments.length, functions = Array(_len), _key = 0; _key < _len; _key++) {
+    functions[_key] = arguments[_key];
+  }
+
+  return functions.reduce(function (f, g) {
+    return function () {
+      return f(g.apply(undefined, arguments));
+    };
+  });
+};
+
+/**
+ * @private
+ *
+ * @function every
+ *
+ * @description
+ * faster version of determining every item in array matches fn check
+ *
+ * @param {Array<*>} array array to test
+ * @param {function} fn fn to test each item against
+ * @returns {boolean} do all values match
+ */
+var every = exports.every = function every(array, fn) {
+  if (!array.length) {
+    return true;
+  }
+
+  var index = array.length;
+
+  while (index--) {
+    if (!fn(array[index], index)) {
+      return false;
+    }
+  }
+
+  return true;
+};
+
+/**
+ * @private
+ *
+ * @function splice
+ *
+ * @description
+ * faster version of splicing a single item from the array
+ *
+ * @param {Array<*>} array array to splice from
+ * @param {number} startingIndex index to splice at
+ * @returns {Array<*>} array minus the item removed
+ */
+var splice = exports.splice = function splice(array, startingIndex) {
+  if (!array.length) {
+    return array;
+  }
+
+  var index = startingIndex - 1;
+
+  while (++index < array.length) {
+    array[index] = array[index + 1];
+  }
+
+  array.length -= 1;
+
+  return array;
+};
+
+/**
+ * @private
+ *
+ * @function unshift
+ *
+ * @description
+ * faster version of unshifting a single item into an array
+ *
+ * @param {Array<*>} array array to unshift into
+ * @param {*} item item to unshift into array
+ * @returns {*} the item just added to the array
+ */
+var unshift = exports.unshift = function unshift(array, item) {
+  var index = array.length;
+
+  while (index--) {
+    array[index + 1] = array[index];
+  }
+
+  return array[0] = item;
+};
+
+/**
+ * @private
+ *
+ * @function isCache
+ *
+ * @description
+ * is the object passed an instance of the native Cache implementation
+ *
+ * @param {*} object object to test
+ * @returns {boolean} is the object an instance of Cache
+ */
+var isCache = exports.isCache = function isCache(object) {
+  return !!object[_constants.CACHE_IDENTIFIER];
+};
+
+/**
+ * @private
+ *
+ * @function createCurriableOptionMethod
+ *
+ * @description
+ * create a method that will curry moize with the option + value passed
+ *
+ * @param {function} fn the method to call
+ * @param {string} option the name of the option to apply
+ * @param {*} value the value to assign to option
+ * @returns {function} the moizer with the option pre-applied
+ */
+var createCurriableOptionMethod = exports.createCurriableOptionMethod = function createCurriableOptionMethod(fn, option) {
+  return function (value) {
+    var _fn;
+
+    return fn((_fn = {}, _fn[option] = value, _fn));
+  };
+};
+
+/**
+ * @private
+ *
+ * @function createPluckFromInstanceList
+ *
+ * @description
+ * get a property from the list on the cache
+ *
+ * @param {{list: Array<Object>}} cache cache whose list to map over
+ * @param {string} key key to pluck from list
+ * @returns {Array<*>} array of values plucked at key
+ */
+var createPluckFromInstanceList = exports.createPluckFromInstanceList = function createPluckFromInstanceList(cache, key) {
+  return !isCache(cache) ? function () {} : function () {
+    return cache.list.map(function (item) {
+      return item[key];
+    });
+  };
+};
+
+/**
+ * @private
+ *
+ * @function getFunctionNameViaRegexp
+ *
+ * @description
+ * use regexp match on stringified function to get the function name
+ *
+ * @param {function} fn function to get the name of
+ * @returns {string} function name
+ */
+var getFunctionNameViaRegexp = exports.getFunctionNameViaRegexp = function getFunctionNameViaRegexp(fn) {
+  var match = fn.toString().match(_constants.FUNCTION_NAME_REGEXP);
+
+  return match ? match[1] : '';
+};
+
+/**
+ * @private
+ *
+ * @function getFunctionName
+ *
+ * @description
+ * get the function name, either from modern property or regexp match,
+ * falling back to generic string
+ *
+ * @param {function} fn function to get the name of
+ * @returns {string} function name
+ */
+var getFunctionName = exports.getFunctionName = function getFunctionName(fn) {
+  return fn.displayName || fn.name || getFunctionNameViaRegexp(fn) || _constants.FUNCTION_TYPEOF;
+};
+
+/**
+ * @private
+ *
+ * @function isArrayFallback
+ *
+ * @description
+ * provide fallback for native Array.isArray test
+ *
+ * @param {*} object object to test if it is an array
+ * @returns {boolean} is the object passed an array or not
+ */
+var isArrayFallback = exports.isArrayFallback = function isArrayFallback(object) {
+  return toString.call(object) === _constants.ARRAY_OBJECT_CLASS;
+};
+
+/**
+ * @private
+ *
+ * @function isArray
+ *
+ * @description
+ * isArray function to use internally, either the native one or fallback
+ *
+ * @param {*} object object to test if it is an array
+ * @returns {boolean} is the object passed an array or not
+ */
+var isArray = exports.isArray = Array.isArray || isArrayFallback;
+
+/**
+ * @private
+ *
+ * @function isComplexObject
+ *
+ * @description
+ * is the object passed a complex object
+ *
+ * @param {*} object object to test if it is complex
+ * @returns {boolean} is it a complex object
+ */
+var isComplexObject = exports.isComplexObject = function isComplexObject(object) {
+  return !!object && (typeof object === 'undefined' ? 'undefined' : _typeof(object)) === _constants.OBJECT_TYPEOF;
+};
+
+/**
+ * @private
+ *
+ * @function isFunction
+ *
+ * @description
+ * is the object passed a function or not
+ *
+ * @param {*} object object to test
+ * @returns {boolean} is it a function
+ */
+var isFunction = exports.isFunction = function isFunction(object) {
+  return (typeof object === 'undefined' ? 'undefined' : _typeof(object)) === _constants.FUNCTION_TYPEOF;
+};
+
+/**
+ * @private
+ *
+ * @function isPlainObject
+ *
+ * @description
+ * is the object passed a plain object or not
+ *
+ * @param {*} object object to test
+ * @returns {boolean} is it a plain object
+ */
+var isPlainObject = exports.isPlainObject = function isPlainObject(object) {
+  return isComplexObject(object) && object.constructor === Object;
+};
+
+/**
+ * @private
+ *
+ * @function isValueObjectOrArray
+ *
+ * @description
+ * check if the object is actually an object or array
+ *
+ * @param {*} object object to test
+ * @returns {boolean} is the object an object or array
+ */
+var isValueObjectOrArray = exports.isValueObjectOrArray = function isValueObjectOrArray(object) {
+  return isComplexObject(object) && every(_constants.GOTCHA_OBJECT_CLASSES, function (Class) {
+    return !(object instanceof Class);
+  });
+};
+
+/**
+ * @private
+ *
+ * @function customReplacer
+ *
+ * @description
+ * custom replacer for the stringify function
+ *
+ * @param {string} key key in json object
+ * @param {*} value value in json object
+ * @returns {*} if function then toString of it, else the value itself
+ */
+var customReplacer = exports.customReplacer = function customReplacer(key, value) {
+  return isFunction(value) ? '' + value : value;
+};
+
+/**
+ * @private
+ *
+ * @function decycle
+ *
+ * @description
+ * ES2015-ified version of cycle.decyle
+ *
+ * @param {*} object object to stringify
+ * @returns {string} stringified value of object
+ */
+var decycle = exports.decycle = function decycle(object) {
+  var cache = new _Cache2.default();
+
+  /**
+   * @private
+   *
+   * @function coalesceCircularReferences
+   *
+   * @description
+   * recursive method to replace any circular references with a placeholder
+   *
+   * @param {*} value value in object to decycle
+   * @param {string} path path to reference
+   * @returns {*} clean value
+   */
+  var coalesceCircularReferences = function coalesceCircularReferences(value, path) {
+    if (!isValueObjectOrArray(value)) {
+      return value;
+    }
+
+    if (cache.has(value)) {
+      return {
+        $ref: cache.get(value)
+      };
+    }
+
+    cache.set(value, path);
+
+    if (isArray(value)) {
+      return value.map(function (item, itemIndex) {
+        return coalesceCircularReferences(item, path + '[' + itemIndex + ']');
+      });
+    }
+
+    return keys(value).reduce(function (object, name) {
+      object[name] = coalesceCircularReferences(value[name], path + '[' + JSON.stringify(name) + ']');
+
+      return object;
+    }, {});
+  };
+
+  return coalesceCircularReferences(object, '$');
+};
+
+/**
+ * @private
+ *
+ * @function deleteItemFromCache
+ *
+ * @description
+ * remove an item from cache
+ *
+ * @param {Cache} cache caching mechanism for method
+ * @param {*} key key to delete
+ * @param {boolean} [isKeyLastItem=false] should the key be the last item in the LRU list
+ */
+var deleteItemFromCache = exports.deleteItemFromCache = function deleteItemFromCache(cache, key) {
+  var isKeyLastItem = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
+
+  if (isKeyLastItem && isCache(cache)) {
+    key = cache.list[cache.list.length - 1].key;
+  }
+
+  if (cache.has(key)) {
+    cache.delete(key);
+  }
+};
+
+/**
+ * @private
+ *
+ * @function isKeyShallowEqualWithArgs
+ *
+ * @description
+ * is the value passed shallowly equal with the args
+ *
+ * @param {*} value the value to compare
+ * @param {Array<*>} args the args to test
+ * @returns {boolean} are the args shallow equal to the value
+ */
+var isKeyShallowEqualWithArgs = exports.isKeyShallowEqualWithArgs = function isKeyShallowEqualWithArgs(value, args) {
+  return value.isMultiParamKey && value.key.length === args.length && every(args, function (arg, index) {
+    return arg === value.key[index];
+  });
+};
+
+/**
+ * @private
+ *
+ * @function getMultiParamKey
+ *
+ * @description
+ * get the multi-parameter key that either matches a current one in state or is the same as the one passed
+ *
+ * @param {Cache} cache cache to compare args to
+ * @param {Array<*>} args arguments passed to moize get key
+ * @returns {Array<*>} either a matching key in cache or the same key as the one passed
+ */
+var getMultiParamKey = exports.getMultiParamKey = function getMultiParamKey(cache, args) {
+  if (cache.lastItem && isKeyShallowEqualWithArgs(cache.lastItem, args)) {
+    return cache.lastItem.key;
+  }
+
+  var iterator = cache.getKeyIterator();
+
+  var iteration = void 0;
+
+  while ((iteration = iterator.next()) && !iteration.done) {
+    if (isKeyShallowEqualWithArgs(iteration, args)) {
+      return iteration.key;
+    }
+  }
+
+  // $FlowIgnore ok to add key to array object
+  args.isMultiParamKey = true;
+
+  return args;
+};
+
+/**
+ * @private
+ *
+ * @function createAddPropertiesToFunction
+ *
+ * @description
+ * add the caching mechanism to the function passed and return the function
+ *
+ * @param {Cache} cache caching mechanism that has get / set / has methods
+ * @param {function} originalFunction function to get the name of
+ * @param {Options} options the options for the given memoized function
+ * @returns {function(function): function} method that has cache mechanism added to it
+ */
+var createAddPropertiesToFunction = exports.createAddPropertiesToFunction = function createAddPropertiesToFunction(cache, originalFunction, options) {
+  return function (fn) {
+    fn.cache = cache;
+    fn.displayName = 'Memoized(' + getFunctionName(originalFunction) + ')';
+    fn.isMemoized = true;
+    fn.options = options;
+    fn.originalFunction = originalFunction;
+
+    /**
+     * @private
+     *
+     * @function add
+     *
+     * @description
+     * manually add an item to cache if the key does not already exist
+     *
+     * @param {*} key key to use in cache
+     * @param {*} value value to assign to key
+     */
+    fn.add = function (key, value) {
+      if (!cache.has(key) && getMultiParamKey(cache, key) === key) {
+        cache.set(key, value);
+      }
+    };
+
+    /**
+     * @private
+     *
+     * @function clear
+     *
+     * @description
+     * clear the current cache for this method
+     */
+    fn.clear = function () {
+      cache.clear();
+    };
+
+    /**
+     * @private
+     *
+     * @function delete
+     *
+     * @description
+     * delete the cache for the key passed for this method
+     *
+     * @param {Array<*>} args combination of args to remove from cache
+     */
+    fn.delete = function () {
+      for (var _len2 = arguments.length, args = Array(_len2), _key2 = 0; _key2 < _len2; _key2++) {
+        args[_key2] = arguments[_key2];
+      }
+
+      var key = args.length === 1 && args[0].isMultiParamKey ? args[0] : getMultiParamKey(cache, args);
+
+      deleteItemFromCache(cache, key);
+    };
+
+    /**
+     * @private
+     *
+     * @function keys
+     *
+     * @description
+     * get the list of keys currently in cache
+     *
+     * @returns {Array<*>}
+     */
+    fn.keys = createPluckFromInstanceList(cache, 'key');
+
+    /**
+     * @private
+     *
+     * @function values
+     *
+     * @description
+     * get the list of values currently in cache
+     *
+     * @returns {Array<*>}
+     */
+    fn.values = createPluckFromInstanceList(cache, 'value');
+
+    return addStaticPropertiesToFunction(originalFunction, fn);
+  };
+};
+
+/**
+ * @private
+ *
+ * @function isFiniteAndPositive
+ *
+ * @description
+ * is the number passed finite and positive
+ *
+ * @param {number} number number to test for finiteness and positivity
+ * @returns {boolean} is the number finite and positive
+ */
+var isFiniteAndPositive = exports.isFiniteAndPositive = function isFiniteAndPositive(number) {
+  return number === ~~number && number > 0;
+};
+
+/**
+ * @private
+ *
+ * @function getIndexOfKey
+ *
+ * @description
+ * get the index of the key in the map
+ *
+ * @param {Cache} cache cache to iterate over
+ * @param {*} key key to find in list
+ * @returns {number} index location of key in list
+ */
+var getIndexOfKey = exports.getIndexOfKey = function getIndexOfKey(cache, key) {
+  var iterator = cache.getKeyIterator();
+
+  var iteration = void 0;
+
+  while ((iteration = iterator.next()) && !iteration.done) {
+    if (iteration.key === key) {
+      return iteration.index;
+    }
+  }
+
+  return -1;
+};
+
+/**
+ * @private
+ *
+ * @function stringify
+ *
+ * @description
+ * stringify with a custom replacer if circular, else use standard JSON.stringify
+ *
+ * @param {*} value value to stringify
+ * @param {function} [replacer] replacer to used in stringification
+ * @returns {string} the stringified version of value
+ */
+var stringify = exports.stringify = function stringify(value, replacer) {
+  try {
+    return jsonStringify(value, replacer);
+  } catch (exception) {
+    return jsonStringify(decycle(value), replacer);
+  }
+};
+
+/**
+ * @private
+ *
+ * @function getStringifiedArgument
+ *
+ * @description
+ * get the stringified version of the argument passed
+ *
+ * @param {*} arg argument to stringify
+ * @param {function} [replacer] replacer to used in stringification
+ * @returns {string}
+ */
+var getStringifiedArgument = exports.getStringifiedArgument = function getStringifiedArgument(arg, replacer) {
+  return isComplexObject(arg) ? stringify(arg, replacer) : arg;
+};
+
+/**
+ * @private
+ *
+ * @function createArgumentSerializer
+ *
+ * @description
+ * create the internal argument serializer based on the options passed
+ *
+ * @param {boolean} serializeFunctions should functions be included in the serialization
+ * @param {number} maxArgs the cap on the number of arguments used in serialization
+ * @returns {function(...Array<*>): string} argument serialization method
+ */
+var createArgumentSerializer = exports.createArgumentSerializer = function createArgumentSerializer(serializeFunctions, maxArgs) {
+  var replacer = serializeFunctions ? customReplacer : null;
+  var hasMaxArgs = isFiniteAndPositive(maxArgs);
+
+  return function (args) {
+    var length = hasMaxArgs ? maxArgs : args.length;
+
+    var index = -1,
+        key = '|';
+
+    while (++index < length) {
+      key += getStringifiedArgument(args[index], replacer) + '|';
+    }
+
+    return key;
+  };
+};
+
+/**
+ * @private
+ *
+ * @function getSerializerFunction
+ *
+ * @description
+ * based on the options passed, either use the serializer passed or generate the internal one
+ *
+ * @param {function} [serializerFromOptions] serializer function passed into options
+ * @param {boolean} serializeFunctions should functions be included in the serialization
+ * @param {number} maxArgs the cap on the number of arguments used in serialization
+ * @returns {function} the function to use in serializing the arguments
+ */
+var getSerializerFunction = exports.getSerializerFunction = function getSerializerFunction(serializerFromOptions, serializeFunctions, maxArgs) {
+  // $FlowIgnore
+  return isFunction(serializerFromOptions) ? serializerFromOptions : createArgumentSerializer(serializeFunctions, maxArgs);
+};
+
+/**
+ * @private
+ *
+ * @function createGetCacheKey
+ *
+ * @description
+ * get the key used for storage in the method's cache
+ *
+ * @param {Cache} cache cache where keys are stored
+ * @param {boolean} serialize should the arguments be serialized into a string
+ * @param {function} serializerFromOptions method used to serialize keys into a string
+ * @param {boolean} serializeFunctions should functions be converted to string in serialization
+ * @param {number} maxArgs the maximum number of arguments to use in the serialization
+ * @returns {function(Array<*>): *}
+ */
+var createGetCacheKey = exports.createGetCacheKey = function createGetCacheKey(cache, serialize, serializerFromOptions, serializeFunctions, maxArgs) {
+  if (serialize) {
+    var serializeArguments = getSerializerFunction(serializerFromOptions, serializeFunctions, maxArgs);
+
+    return function (args) {
+      return serializeArguments(args);
+    };
+  }
+
+  if (isFiniteAndPositive(maxArgs)) {
+    return function (args) {
+      return args.length > 1 ? getMultiParamKey(cache, args.slice(0, maxArgs)) : args[0];
+    };
+  }
+
+  return function (args) {
+    return args.length > 1 ? getMultiParamKey(cache, args) : args[0];
+  };
+};
+
+/**
+ * @private
+ *
+ * @function setExpirationOfCache
+ *
+ * @description
+ * create function to set the cache to expire after the maxAge passed (coalesced to 0)
+ *
+ * @param {number} maxAge number in ms to wait before expiring the cache
+ * @returns {function(Cache, Array<*>): void} setExpirationOfCache method
+ */
+var createSetExpirationOfCache = exports.createSetExpirationOfCache = function createSetExpirationOfCache(maxAge) {
+  return function (cache, key) {
+    setTimeout(function () {
+      deleteItemFromCache(cache, key);
+    }, maxAge);
+  };
+};
+
+/**
+ * @private
+ *
+ * @function createPromiseRejecter
+ *
+ * @description
+ * create method that will reject the promise and delete the key from cache
+ *
+ * @param {Cache} cache cache to update
+ * @param {*} key key to delete from cache
+ * @param {function} PromiseLibrary the promise library used
+ * @returns {function} the rejecter function for the promise
+ */
+var createPromiseRejecter = exports.createPromiseRejecter = function createPromiseRejecter(cache, key, PromiseLibrary) {
+  return function (exception) {
+    cache.delete(key);
+
+    return PromiseLibrary.reject(exception);
+  };
+};
+
+/**
+ * @private
+ *
+ * @function createPromiseResolver
+ *
+ * @description
+ * create method that will resolve the promise and update the key in cache
+ *
+ * @param {Cache} cache cache to update
+ * @param {*} key key to update in cache
+ * @param {boolean} hasMaxAge should the cache expire after some time
+ * @param {function} setExpirationOfCache function to set the expiration of cache
+ * @param {function} PromiseLibrary the promise library used
+ * @returns {function} the resolver function for the promise
+ */
+var createPromiseResolver = exports.createPromiseResolver = function createPromiseResolver(cache, key, hasMaxAge, setExpirationOfCache, PromiseLibrary) {
+  return function (resolvedValue) {
+    cache.updateItem(key, PromiseLibrary.resolve(resolvedValue));
+
+    if (hasMaxAge) {
+      setExpirationOfCache(cache, key);
+    }
+
+    return resolvedValue;
+  };
+};
+
+/**
+ * @private
+ *
+ * @function createSetNewCachedValue
+ *
+ * @description
+ * assign the new value to the key in the functions cache and return the value
+ *
+ * @param {Cache} cache the cache to assign the value to at key
+ * @param {boolean} isPromise is the value a promise or not
+ * @param {number} maxAge how long should the cache persist
+ * @param {number} maxSize the maximum number of values to store in cache
+ * @param {Function} PromiseLibrary the library to use for resolve / reject
+ * @returns {function(function, *, *): *} value just stored in cache
+ */
+var createSetNewCachedValue = exports.createSetNewCachedValue = function createSetNewCachedValue(cache, isPromise, maxAge, maxSize, PromiseLibrary) {
+  var hasMaxAge = isFiniteAndPositive(maxAge);
+  var hasMaxSize = isFiniteAndPositive(maxSize);
+  var setExpirationOfCache = createSetExpirationOfCache(maxAge);
+
+  if (isPromise) {
+    return function (key, value) {
+      var promiseResolver = createPromiseResolver(cache, key, hasMaxAge, setExpirationOfCache, PromiseLibrary);
+      var promiseRejecter = createPromiseRejecter(cache, key, PromiseLibrary);
+
+      var handler = value.then(promiseResolver, promiseRejecter);
+
+      cache.set(key, handler);
+
+      if (hasMaxSize && cache.size > maxSize) {
+        deleteItemFromCache(cache, undefined, true);
+      }
+
+      return handler;
+    };
+  }
+
+  return function (key, value) {
+    cache.set(key, value);
+
+    if (hasMaxAge) {
+      setExpirationOfCache(cache, key);
+    }
+
+    if (hasMaxSize && cache.size > maxSize) {
+      deleteItemFromCache(cache, undefined, true);
+    }
+
+    return value;
+  };
+};
+},{"./Cache":5,"./constants":6}],9:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -2075,7 +3425,7 @@ function checkPropTypes(typeSpecs, values, location, componentName, getStack) {
 
 module.exports = checkPropTypes;
 
-},{"./lib/ReactPropTypesSecret":9,"fbjs/lib/invariant":2,"fbjs/lib/warning":3}],6:[function(require,module,exports){
+},{"./lib/ReactPropTypesSecret":13,"fbjs/lib/invariant":2,"fbjs/lib/warning":3}],10:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -2136,7 +3486,7 @@ module.exports = function() {
   return ReactPropTypes;
 };
 
-},{"./lib/ReactPropTypesSecret":9,"fbjs/lib/emptyFunction":1,"fbjs/lib/invariant":2}],7:[function(require,module,exports){
+},{"./lib/ReactPropTypesSecret":13,"fbjs/lib/emptyFunction":1,"fbjs/lib/invariant":2}],11:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -2650,7 +4000,7 @@ module.exports = function(isValidElement, throwOnDirectAccess) {
   return ReactPropTypes;
 };
 
-},{"./checkPropTypes":5,"./lib/ReactPropTypesSecret":9,"fbjs/lib/emptyFunction":1,"fbjs/lib/invariant":2,"fbjs/lib/warning":3}],8:[function(require,module,exports){
+},{"./checkPropTypes":9,"./lib/ReactPropTypesSecret":13,"fbjs/lib/emptyFunction":1,"fbjs/lib/invariant":2,"fbjs/lib/warning":3}],12:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -2682,7 +4032,7 @@ if ("production" !== 'production') {
   module.exports = require('./factoryWithThrowingShims')();
 }
 
-},{"./factoryWithThrowingShims":6,"./factoryWithTypeCheckers":7}],9:[function(require,module,exports){
+},{"./factoryWithThrowingShims":10,"./factoryWithTypeCheckers":11}],13:[function(require,module,exports){
 /**
  * Copyright 2013-present, Facebook, Inc.
  * All rights reserved.
@@ -2698,12 +4048,12 @@ var ReactPropTypesSecret = 'SECRET_DO_NOT_PASS_THIS_OR_YOU_WILL_BE_FIRED';
 
 module.exports = ReactPropTypesSecret;
 
-},{}],10:[function(require,module,exports){
+},{}],14:[function(require,module,exports){
 (function (global){
-'use strict';
+"use strict";
 
 Object.defineProperty(exports, "__esModule", {
-  value: true
+	value: true
 });
 exports.Chart = exports.defaults = exports.Bubble = exports.Polar = exports.Radar = exports.HorizontalBar = exports.Bar = exports.Line = exports.Pie = exports.Doughnut = undefined;
 
@@ -2715,7 +4065,7 @@ var _react = (typeof window !== "undefined" ? window['React'] : typeof global !=
 
 var _react2 = _interopRequireDefault(_react);
 
-var _propTypes = require('prop-types');
+var _propTypes = require("prop-types");
 
 var _propTypes2 = _interopRequireDefault(_propTypes);
 
@@ -2727,9 +4077,13 @@ var _chart = (typeof window !== "undefined" ? window['Chart'] : typeof global !=
 
 var _chart2 = _interopRequireDefault(_chart);
 
-var _lodash = require('lodash.isequal');
+var _lodash = require("lodash.isequal");
 
 var _lodash2 = _interopRequireDefault(_lodash);
+
+var _moize = require("moize");
+
+var _moize2 = _interopRequireDefault(_moize);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -2741,494 +4095,517 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
+var datasetKeyProvider = function datasetKeyProvider(d) {
+	return d.label;
+};
+var datasetKeyProviderMemoized = (0, _moize2.default)(datasetKeyProvider);
+
 var ChartComponent = function (_React$Component) {
-  _inherits(ChartComponent, _React$Component);
+	_inherits(ChartComponent, _React$Component);
 
-  function ChartComponent() {
-    var _ref;
+	function ChartComponent() {
+		var _ref;
 
-    var _temp, _this, _ret;
+		var _temp, _this, _ret;
 
-    _classCallCheck(this, ChartComponent);
+		_classCallCheck(this, ChartComponent);
 
-    for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
-      args[_key] = arguments[_key];
-    }
+		for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+			args[_key] = arguments[_key];
+		}
 
-    return _ret = (_temp = (_this = _possibleConstructorReturn(this, (_ref = ChartComponent.__proto__ || Object.getPrototypeOf(ChartComponent)).call.apply(_ref, [this].concat(args))), _this), _this.handleOnClick = function (event) {
-      var instance = _this.chart_instance;
+		return _ret = (_temp = (_this = _possibleConstructorReturn(this, (_ref = ChartComponent.__proto__ || Object.getPrototypeOf(ChartComponent)).call.apply(_ref, [this].concat(args))), _this), _this.handleOnClick = function (event) {
+			var instance = _this.chart_instance;
 
-      var _this$props = _this.props,
-          getDatasetAtEvent = _this$props.getDatasetAtEvent,
-          getElementAtEvent = _this$props.getElementAtEvent,
-          getElementsAtEvent = _this$props.getElementsAtEvent,
-          onElementsClick = _this$props.onElementsClick;
-
-
-      getDatasetAtEvent && getDatasetAtEvent(instance.getDatasetAtEvent(event), event);
-      getElementAtEvent && getElementAtEvent(instance.getElementAtEvent(event), event);
-      getElementsAtEvent && getElementsAtEvent(instance.getElementsAtEvent(event), event);
-      onElementsClick && onElementsClick(instance.getElementsAtEvent(event), event); // Backward compatibility
-    }, _temp), _possibleConstructorReturn(_this, _ret);
-  }
-
-  _createClass(ChartComponent, [{
-    key: 'componentWillMount',
-    value: function componentWillMount() {
-      this.chart_instance = undefined;
-    }
-  }, {
-    key: 'componentDidMount',
-    value: function componentDidMount() {
-      this.renderChart();
-    }
-  }, {
-    key: 'componentDidUpdate',
-    value: function componentDidUpdate() {
-      if (this.props.redraw) {
-        this.chart_instance.destroy();
-        this.renderChart();
-        return;
-      }
-
-      this.updateChart();
-    }
-  }, {
-    key: 'shouldComponentUpdate',
-    value: function shouldComponentUpdate(nextProps) {
-      var _props = this.props,
-          redraw = _props.redraw,
-          type = _props.type,
-          options = _props.options,
-          plugins = _props.plugins,
-          legend = _props.legend,
-          height = _props.height,
-          width = _props.width;
+			var _this$props = _this.props,
+			    getDatasetAtEvent = _this$props.getDatasetAtEvent,
+			    getElementAtEvent = _this$props.getElementAtEvent,
+			    getElementsAtEvent = _this$props.getElementsAtEvent,
+			    onElementsClick = _this$props.onElementsClick;
 
 
-      if (nextProps.redraw === true) {
-        return true;
-      }
+			getDatasetAtEvent && getDatasetAtEvent(instance.getDatasetAtEvent(event), event);
+			getElementAtEvent && getElementAtEvent(instance.getElementAtEvent(event), event);
+			getElementsAtEvent && getElementsAtEvent(instance.getElementsAtEvent(event), event);
+			onElementsClick && onElementsClick(instance.getElementsAtEvent(event), event); // Backward compatibility
+		}, _this.handleOnClick = function (event) {
+			var instance = _this.chart_instance;
 
-      if (height !== nextProps.height || width !== nextProps.width) {
-        return true;
-      }
-
-      if (type !== nextProps.type) {
-        return true;
-      }
-
-      if (!(0, _lodash2.default)(legend, nextProps.legend)) {
-        return true;
-      }
-
-      if (!(0, _lodash2.default)(options, nextProps.options)) {
-        return true;
-      }
-
-      var nextData = this.transformDataProp(nextProps);
-
-      if (!(0, _lodash2.default)(this.shadowDataProp, nextData)) {
-        return true;
-      }
-
-      return !(0, _lodash2.default)(plugins, nextProps.plugins);
-    }
-  }, {
-    key: 'componentWillUnmount',
-    value: function componentWillUnmount() {
-      this.chart_instance.destroy();
-    }
-  }, {
-    key: 'transformDataProp',
-    value: function transformDataProp(props) {
-      var data = props.data;
-
-      if (typeof data == 'function') {
-        var node = _reactDom2.default.findDOMNode(this);
-        return data(node);
-      } else {
-        return data;
-      }
-    }
-
-    // Chart.js directly mutates the data.dataset objects by adding _meta proprerty
-    // this makes impossible to compare the current and next data changes
-    // therefore we memoize the data prop while sending a fake to Chart.js for mutation.
-    // see https://github.com/chartjs/Chart.js/blob/master/src/core/core.controller.js#L615-L617
-
-  }, {
-    key: 'memoizeDataProps',
-    value: function memoizeDataProps() {
-      if (!this.props.data) {
-        return;
-      }
-
-      var data = this.transformDataProp(this.props);
-
-      this.shadowDataProp = _extends({}, data, {
-        datasets: data.datasets && data.datasets.map(function (set) {
-          return _extends({}, set);
-        })
-      });
-
-      return data;
-    }
-  }, {
-    key: 'updateChart',
-    value: function updateChart() {
-      var _this2 = this;
-
-      var options = this.props.options;
+			var _this$props2 = _this.props,
+			    getDatasetAtEvent = _this$props2.getDatasetAtEvent,
+			    getElementAtEvent = _this$props2.getElementAtEvent,
+			    getElementsAtEvent = _this$props2.getElementsAtEvent,
+			    onElementsClick = _this$props2.onElementsClick;
 
 
-      var data = this.memoizeDataProps(this.props);
+			getDatasetAtEvent && getDatasetAtEvent(instance.getDatasetAtEvent(event), event);
+			getElementAtEvent && getElementAtEvent(instance.getElementAtEvent(event), event);
+			getElementsAtEvent && getElementsAtEvent(instance.getElementsAtEvent(event), event);
+			onElementsClick && onElementsClick(instance.getElementsAtEvent(event), event); // Backward compatibility
+		}, _temp), _possibleConstructorReturn(_this, _ret);
+	}
 
-      if (!this.chart_instance) return;
+	_createClass(ChartComponent, [{
+		key: "componentWillMount",
+		value: function componentWillMount() {
+			this.chart_instance = undefined;
+		}
+	}, {
+		key: "componentDidMount",
+		value: function componentDidMount() {
+			this.renderChart();
+		}
+	}, {
+		key: "componentWillUpdate",
+		value: function componentWillUpdate() {
+			if (this.props.redraw) {
+				this.chart_instance.destroy();
+			}
+		}
+	}, {
+		key: "componentDidUpdate",
+		value: function componentDidUpdate() {
+			if (this.props.redraw) {
+				this.renderChart();
+				return;
+			}
 
-      if (options) {
-        this.chart_instance.options = _chart2.default.helpers.configMerge(this.chart_instance.options, options);
-      }
-
-      // Pipe datasets to chart instance datasets enabling
-      // seamless transitions
-      var currentDatasets = this.chart_instance.config.data && this.chart_instance.config.data.datasets || [];
-      var nextDatasets = data.datasets || [];
-
-      // use the key provider to work out which series have been added/removed/changed
-      var currentDatasetKeys = currentDatasets.map(this.props.datasetKeyProvider);
-      var nextDatasetKeys = nextDatasets.map(this.props.datasetKeyProvider);
-      var newDatasets = nextDatasets.filter(function (d) {
-        return currentDatasetKeys.indexOf(_this2.props.datasetKeyProvider(d)) === -1;
-      });
-
-      // process the updates (via a reverse for loop so we can safely splice deleted datasets out of the array
-
-      var _loop = function _loop(idx) {
-        var currentDatasetKey = _this2.props.datasetKeyProvider(currentDatasets[idx]);
-        if (nextDatasetKeys.indexOf(currentDatasetKey) === -1) {
-          // deleted series
-          currentDatasets.splice(idx, 1);
-        } else {
-          var retainedDataset = nextDatasets.find(function (d) {
-            return _this2.props.datasetKeyProvider(d) === currentDatasetKey;
-          });
-          if (retainedDataset) {
-            // update it in place if it is a retained dataset
-            currentDatasets[idx].data.splice(retainedDataset.data.length);
-            retainedDataset.data.forEach(function (point, pid) {
-              currentDatasets[idx].data[pid] = retainedDataset.data[pid];
-            });
-
-            var _data = retainedDataset.data,
-                otherProps = _objectWithoutProperties(retainedDataset, ['data']);
-
-            currentDatasets[idx] = _extends({
-              data: currentDatasets[idx].data
-            }, currentDatasets[idx], otherProps);
-          }
-        }
-      };
-
-      for (var idx = currentDatasets.length - 1; idx >= 0; idx -= 1) {
-        _loop(idx);
-      }
-      // finally add any new series
-      newDatasets.forEach(function (d) {
-        return currentDatasets.push(d);
-      });
-
-      var datasets = data.datasets,
-          rest = _objectWithoutProperties(data, ['datasets']);
-
-      this.chart_instance.config.data = _extends({}, this.chart_instance.config.data, rest);
-
-      this.chart_instance.update();
-    }
-  }, {
-    key: 'renderChart',
-    value: function renderChart() {
-      var _props2 = this.props,
-          options = _props2.options,
-          legend = _props2.legend,
-          type = _props2.type,
-          redraw = _props2.redraw,
-          plugins = _props2.plugins;
-
-      var node = _reactDom2.default.findDOMNode(this);
-      var data = this.memoizeDataProps();
-
-      this.chart_instance = new _chart2.default(node, {
-        type: type,
-        data: data,
-        options: options,
-        plugins: plugins
-      });
-    }
-  }, {
-    key: 'render',
-    value: function render() {
-      var _props3 = this.props,
-          height = _props3.height,
-          width = _props3.width,
-          onElementsClick = _props3.onElementsClick;
+			this.updateChart();
+		}
+	}, {
+		key: "shouldComponentUpdate",
+		value: function shouldComponentUpdate(nextProps) {
+			var _props = this.props,
+			    redraw = _props.redraw,
+			    type = _props.type,
+			    options = _props.options,
+			    plugins = _props.plugins,
+			    legend = _props.legend,
+			    height = _props.height,
+			    width = _props.width;
 
 
-      return _react2.default.createElement('canvas', {
-        height: height,
-        width: width,
-        onClick: this.handleOnClick
-      });
-    }
-  }]);
+			if (nextProps.redraw === true) {
+				return true;
+			}
 
-  return ChartComponent;
+			if (height !== nextProps.height || width !== nextProps.width) {
+				return true;
+			}
+
+			if (type !== nextProps.type) {
+				return true;
+			}
+
+			if (!(0, _lodash2.default)(legend, nextProps.legend)) {
+				return true;
+			}
+
+			if (!(0, _lodash2.default)(options, nextProps.options)) {
+				return true;
+			}
+
+			var nextData = this.transformDataProp(nextProps);
+
+			if (!(0, _lodash2.default)(this.shadowDataProp, nextData)) {
+				return true;
+			}
+
+			return !(0, _lodash2.default)(plugins, nextProps.plugins);
+		}
+	}, {
+		key: "componentWillUnmount",
+		value: function componentWillUnmount() {
+			this.chart_instance.destroy();
+		}
+
+		// Chart.js directly mutates the data.dataset objects by adding _meta proprerty
+		// this makes impossible to compare the current and next data changes
+		// therefore we memoize the data prop while sending a fake to Chart.js for mutation.
+
+	}, {
+		key: "transformDataProp",
+		value: function transformDataProp(props) {
+			var data = props.data;
+
+			if (typeof data == 'function') {
+				var node = _reactDom2.default.findDOMNode(this);
+				return data(node);
+			} else {
+				return data;
+			}
+		}
+
+		// see https://github.com/chartjs/Chart.js/blob/master/src/core/core.controller.js#L615-L617
+
+	}, {
+		key: "memoizeDataProps",
+		value: function memoizeDataProps() {
+			if (!this.props.data) {
+				return;
+			}
+
+			var data = this.transformDataProp(this.props);
+
+			this.shadowDataProp = _extends({}, data, {
+				datasets: data.datasets && data.datasets.map(function (set) {
+					return _extends({}, set);
+				})
+			});
+
+			return data;
+		}
+	}, {
+		key: "updateChart",
+		value: function updateChart() {
+			var _this2 = this;
+
+			var options = this.props.options;
+
+
+			var data = this.memoizeDataProps(this.props);
+
+			if (!this.chart_instance) return;
+
+			if (options) {
+				this.chart_instance.options = _chart2.default.helpers.configMerge(this.chart_instance.options, options);
+			}
+
+			// Pipe datasets to chart instance datasets enabling
+			// seamless transitions
+			var currentDatasets = this.chart_instance.config.data && this.chart_instance.config.data.datasets || [];
+			var nextDatasets = data.datasets || [];
+
+			// use the key provider to work out which series have been added/removed/changed
+			var currentDatasetKeys = currentDatasets.map(this.props.datasetKeyProvider);
+			var nextDatasetKeys = nextDatasets.map(this.props.datasetKeyProvider);
+			var newDatasets = nextDatasets.filter(function (d) {
+				return currentDatasetKeys.indexOf(_this2.props.datasetKeyProvider(d)) === -1;
+			});
+
+			// process the updates (via a reverse for loop so we can safely splice deleted datasets out of the array
+
+			var _loop = function _loop(idx) {
+				var currentDatasetKey = _this2.props.datasetKeyProvider(currentDatasets[idx]);
+				if (nextDatasetKeys.indexOf(currentDatasetKey) === -1) {
+					// deleted series
+					currentDatasets.splice(idx, 1);
+				} else {
+					var retainedDataset = nextDatasets.find(function (d) {
+						return _this2.props.datasetKeyProvider(d) === currentDatasetKey;
+					});
+					if (retainedDataset) {
+						// update it in place if it is a retained dataset
+						currentDatasets[idx].data.splice(retainedDataset.data.length);
+						retainedDataset.data.forEach(function (point, pid) {
+							currentDatasets[idx].data[pid] = retainedDataset.data[pid];
+						});
+
+						var _data = retainedDataset.data,
+						    otherProps = _objectWithoutProperties(retainedDataset, ["data"]);
+
+						currentDatasets[idx] = _extends({
+							data: currentDatasets[idx].data
+						}, currentDatasets[idx], otherProps);
+					}
+				}
+			};
+
+			for (var idx = currentDatasets.length - 1; idx >= 0; idx -= 1) {
+				_loop(idx);
+			}
+			// finally add any new series
+			newDatasets.forEach(function (d) {
+				return currentDatasets.push(d);
+			});
+
+			var datasets = data.datasets,
+			    rest = _objectWithoutProperties(data, ["datasets"]);
+
+			this.chart_instance.config.data = _extends({}, this.chart_instance.config.data, rest);
+
+			this.chart_instance.update();
+		}
+	}, {
+		key: "renderChart",
+		value: function renderChart() {
+			var _props2 = this.props,
+			    options = _props2.options,
+			    legend = _props2.legend,
+			    type = _props2.type,
+			    redraw = _props2.redraw,
+			    plugins = _props2.plugins;
+
+			var node = _reactDom2.default.findDOMNode(this);
+			var data = this.memoizeDataProps();
+
+			this.chart_instance = new _chart2.default(node, {
+				type: type,
+				data: data,
+				options: options,
+				plugins: plugins
+			});
+		}
+	}, {
+		key: "render",
+		value: function render() {
+			var _props3 = this.props,
+			    height = _props3.height,
+			    width = _props3.width,
+			    onElementsClick = _props3.onElementsClick;
+
+
+			return _react2.default.createElement("canvas", {
+				height: height,
+				width: width,
+				onClick: this.handleOnClick
+			});
+		}
+	}]);
+
+	return ChartComponent;
 }(_react2.default.Component);
 
-ChartComponent.getLabelAsKey = function (d) {
-  return d.label;
-};
-
-ChartComponent.propTypes = {
-  data: _propTypes2.default.oneOfType([_propTypes2.default.object, _propTypes2.default.func]).isRequired,
-  getDatasetAtEvent: _propTypes2.default.func,
-  getElementAtEvent: _propTypes2.default.func,
-  getElementsAtEvent: _propTypes2.default.func,
-  height: _propTypes2.default.number,
-  legend: _propTypes2.default.object,
-  onElementsClick: _propTypes2.default.func,
-  options: _propTypes2.default.object,
-  plugins: _propTypes2.default.arrayOf(_propTypes2.default.object),
-  redraw: _propTypes2.default.bool,
-  type: _propTypes2.default.oneOf(['doughnut', 'pie', 'line', 'bar', 'horizontalBar', 'radar', 'polarArea', 'bubble']),
-  width: _propTypes2.default.number,
-  datasetKeyProvider: _propTypes2.default.func
-};
 ChartComponent.defaultProps = {
-  legend: {
-    display: true,
-    position: 'bottom'
-  },
-  type: 'doughnut',
-  height: 150,
-  width: 300,
-  redraw: false,
-  options: {},
-  datasetKeyProvider: ChartComponent.getLabelAsKey
+	legend: {
+		display: true,
+		position: 'bottom'
+	},
+	type: 'doughnut',
+	height: 150,
+	width: 300,
+	redraw: false,
+	options: {},
+	datasetKeyProvider: datasetKeyProviderMemoized
+};
+ChartComponent.propTypes = {
+	data: _propTypes2.default.oneOfType([_propTypes2.default.object, _propTypes2.default.func]).isRequired,
+	getDatasetAtEvent: _propTypes2.default.func,
+	getElementAtEvent: _propTypes2.default.func,
+	getElementsAtEvent: _propTypes2.default.func,
+	height: _propTypes2.default.number,
+	legend: _propTypes2.default.object,
+	onElementsClick: _propTypes2.default.func,
+	options: _propTypes2.default.object,
+	plugins: _propTypes2.default.arrayOf(_propTypes2.default.object),
+	redraw: _propTypes2.default.bool,
+	type: _propTypes2.default.oneOf(['doughnut', 'pie', 'line', 'bar', 'horizontalBar', 'radar', 'polarArea', 'bubble']),
+	width: _propTypes2.default.number,
+	datasetKeyProvider: _propTypes2.default.func
 };
 exports.default = ChartComponent;
 
 var Doughnut = exports.Doughnut = function (_React$Component2) {
-  _inherits(Doughnut, _React$Component2);
+	_inherits(Doughnut, _React$Component2);
 
-  function Doughnut() {
-    _classCallCheck(this, Doughnut);
+	function Doughnut() {
+		_classCallCheck(this, Doughnut);
 
-    return _possibleConstructorReturn(this, (Doughnut.__proto__ || Object.getPrototypeOf(Doughnut)).apply(this, arguments));
-  }
+		return _possibleConstructorReturn(this, (Doughnut.__proto__ || Object.getPrototypeOf(Doughnut)).apply(this, arguments));
+	}
 
-  _createClass(Doughnut, [{
-    key: 'render',
-    value: function render() {
-      var _this4 = this;
+	_createClass(Doughnut, [{
+		key: "render",
+		value: function render() {
+			var _this4 = this;
 
-      return _react2.default.createElement(ChartComponent, _extends({}, this.props, {
-        ref: function ref(_ref2) {
-          return _this4.chart_instance = _ref2 && _ref2.chart_instance;
-        },
-        type: 'doughnut'
-      }));
-    }
-  }]);
+			return _react2.default.createElement(ChartComponent, _extends({}, this.props, {
+				ref: function ref(_ref2) {
+					return _this4.chart_instance = _ref2 && _ref2.chart_instance;
+				},
+				type: "doughnut"
+			}));
+		}
+	}]);
 
-  return Doughnut;
+	return Doughnut;
 }(_react2.default.Component);
 
 var Pie = exports.Pie = function (_React$Component3) {
-  _inherits(Pie, _React$Component3);
+	_inherits(Pie, _React$Component3);
 
-  function Pie() {
-    _classCallCheck(this, Pie);
+	function Pie() {
+		_classCallCheck(this, Pie);
 
-    return _possibleConstructorReturn(this, (Pie.__proto__ || Object.getPrototypeOf(Pie)).apply(this, arguments));
-  }
+		return _possibleConstructorReturn(this, (Pie.__proto__ || Object.getPrototypeOf(Pie)).apply(this, arguments));
+	}
 
-  _createClass(Pie, [{
-    key: 'render',
-    value: function render() {
-      var _this6 = this;
+	_createClass(Pie, [{
+		key: "render",
+		value: function render() {
+			var _this6 = this;
 
-      return _react2.default.createElement(ChartComponent, _extends({}, this.props, {
-        ref: function ref(_ref3) {
-          return _this6.chart_instance = _ref3 && _ref3.chart_instance;
-        },
-        type: 'pie'
-      }));
-    }
-  }]);
+			return _react2.default.createElement(ChartComponent, _extends({}, this.props, {
+				ref: function ref(_ref3) {
+					return _this6.chart_instance = _ref3 && _ref3.chart_instance;
+				},
+				type: "pie"
+			}));
+		}
+	}]);
 
-  return Pie;
+	return Pie;
 }(_react2.default.Component);
 
 var Line = exports.Line = function (_React$Component4) {
-  _inherits(Line, _React$Component4);
+	_inherits(Line, _React$Component4);
 
-  function Line() {
-    _classCallCheck(this, Line);
+	function Line() {
+		_classCallCheck(this, Line);
 
-    return _possibleConstructorReturn(this, (Line.__proto__ || Object.getPrototypeOf(Line)).apply(this, arguments));
-  }
+		return _possibleConstructorReturn(this, (Line.__proto__ || Object.getPrototypeOf(Line)).apply(this, arguments));
+	}
 
-  _createClass(Line, [{
-    key: 'render',
-    value: function render() {
-      var _this8 = this;
+	_createClass(Line, [{
+		key: "render",
+		value: function render() {
+			var _this8 = this;
 
-      return _react2.default.createElement(ChartComponent, _extends({}, this.props, {
-        ref: function ref(_ref4) {
-          return _this8.chart_instance = _ref4 && _ref4.chart_instance;
-        },
-        type: 'line'
-      }));
-    }
-  }]);
+			return _react2.default.createElement(ChartComponent, _extends({}, this.props, {
+				ref: function ref(_ref4) {
+					return _this8.chart_instance = _ref4 && _ref4.chart_instance;
+				},
+				type: "line"
+			}));
+		}
+	}]);
 
-  return Line;
+	return Line;
 }(_react2.default.Component);
 
 var Bar = exports.Bar = function (_React$Component5) {
-  _inherits(Bar, _React$Component5);
+	_inherits(Bar, _React$Component5);
 
-  function Bar() {
-    _classCallCheck(this, Bar);
+	function Bar() {
+		_classCallCheck(this, Bar);
 
-    return _possibleConstructorReturn(this, (Bar.__proto__ || Object.getPrototypeOf(Bar)).apply(this, arguments));
-  }
+		return _possibleConstructorReturn(this, (Bar.__proto__ || Object.getPrototypeOf(Bar)).apply(this, arguments));
+	}
 
-  _createClass(Bar, [{
-    key: 'render',
-    value: function render() {
-      var _this10 = this;
+	_createClass(Bar, [{
+		key: "render",
+		value: function render() {
+			var _this10 = this;
 
-      return _react2.default.createElement(ChartComponent, _extends({}, this.props, {
-        ref: function ref(_ref5) {
-          return _this10.chart_instance = _ref5 && _ref5.chart_instance;
-        },
-        type: 'bar'
-      }));
-    }
-  }]);
+			return _react2.default.createElement(ChartComponent, _extends({}, this.props, {
+				ref: function ref(_ref5) {
+					return _this10.chart_instance = _ref5 && _ref5.chart_instance;
+				},
+				type: "bar"
+			}));
+		}
+	}]);
 
-  return Bar;
+	return Bar;
 }(_react2.default.Component);
 
 var HorizontalBar = exports.HorizontalBar = function (_React$Component6) {
-  _inherits(HorizontalBar, _React$Component6);
+	_inherits(HorizontalBar, _React$Component6);
 
-  function HorizontalBar() {
-    _classCallCheck(this, HorizontalBar);
+	function HorizontalBar() {
+		_classCallCheck(this, HorizontalBar);
 
-    return _possibleConstructorReturn(this, (HorizontalBar.__proto__ || Object.getPrototypeOf(HorizontalBar)).apply(this, arguments));
-  }
+		return _possibleConstructorReturn(this, (HorizontalBar.__proto__ || Object.getPrototypeOf(HorizontalBar)).apply(this, arguments));
+	}
 
-  _createClass(HorizontalBar, [{
-    key: 'render',
-    value: function render() {
-      var _this12 = this;
+	_createClass(HorizontalBar, [{
+		key: "render",
+		value: function render() {
+			var _this12 = this;
 
-      return _react2.default.createElement(ChartComponent, _extends({}, this.props, {
-        ref: function ref(_ref6) {
-          return _this12.chart_instance = _ref6 && _ref6.chart_instance;
-        },
-        type: 'horizontalBar'
-      }));
-    }
-  }]);
+			return _react2.default.createElement(ChartComponent, _extends({}, this.props, {
+				ref: function ref(_ref6) {
+					return _this12.chart_instance = _ref6 && _ref6.chart_instance;
+				},
+				type: "horizontalBar"
+			}));
+		}
+	}]);
 
-  return HorizontalBar;
+	return HorizontalBar;
 }(_react2.default.Component);
 
 var Radar = exports.Radar = function (_React$Component7) {
-  _inherits(Radar, _React$Component7);
+	_inherits(Radar, _React$Component7);
 
-  function Radar() {
-    _classCallCheck(this, Radar);
+	function Radar() {
+		_classCallCheck(this, Radar);
 
-    return _possibleConstructorReturn(this, (Radar.__proto__ || Object.getPrototypeOf(Radar)).apply(this, arguments));
-  }
+		return _possibleConstructorReturn(this, (Radar.__proto__ || Object.getPrototypeOf(Radar)).apply(this, arguments));
+	}
 
-  _createClass(Radar, [{
-    key: 'render',
-    value: function render() {
-      var _this14 = this;
+	_createClass(Radar, [{
+		key: "render",
+		value: function render() {
+			var _this14 = this;
 
-      return _react2.default.createElement(ChartComponent, _extends({}, this.props, {
-        ref: function ref(_ref7) {
-          return _this14.chart_instance = _ref7 && _ref7.chart_instance;
-        },
-        type: 'radar'
-      }));
-    }
-  }]);
+			return _react2.default.createElement(ChartComponent, _extends({}, this.props, {
+				ref: function ref(_ref7) {
+					return _this14.chart_instance = _ref7 && _ref7.chart_instance;
+				},
+				type: "radar"
+			}));
+		}
+	}]);
 
-  return Radar;
+	return Radar;
 }(_react2.default.Component);
 
 var Polar = exports.Polar = function (_React$Component8) {
-  _inherits(Polar, _React$Component8);
+	_inherits(Polar, _React$Component8);
 
-  function Polar() {
-    _classCallCheck(this, Polar);
+	function Polar() {
+		_classCallCheck(this, Polar);
 
-    return _possibleConstructorReturn(this, (Polar.__proto__ || Object.getPrototypeOf(Polar)).apply(this, arguments));
-  }
+		return _possibleConstructorReturn(this, (Polar.__proto__ || Object.getPrototypeOf(Polar)).apply(this, arguments));
+	}
 
-  _createClass(Polar, [{
-    key: 'render',
-    value: function render() {
-      var _this16 = this;
+	_createClass(Polar, [{
+		key: "render",
+		value: function render() {
+			var _this16 = this;
 
-      return _react2.default.createElement(ChartComponent, _extends({}, this.props, {
-        ref: function ref(_ref8) {
-          return _this16.chart_instance = _ref8 && _ref8.chart_instance;
-        },
-        type: 'polarArea'
-      }));
-    }
-  }]);
+			return _react2.default.createElement(ChartComponent, _extends({}, this.props, {
+				ref: function ref(_ref8) {
+					return _this16.chart_instance = _ref8 && _ref8.chart_instance;
+				},
+				type: "polarArea"
+			}));
+		}
+	}]);
 
-  return Polar;
+	return Polar;
 }(_react2.default.Component);
 
 var Bubble = exports.Bubble = function (_React$Component9) {
-  _inherits(Bubble, _React$Component9);
+	_inherits(Bubble, _React$Component9);
 
-  function Bubble() {
-    _classCallCheck(this, Bubble);
+	function Bubble() {
+		_classCallCheck(this, Bubble);
 
-    return _possibleConstructorReturn(this, (Bubble.__proto__ || Object.getPrototypeOf(Bubble)).apply(this, arguments));
-  }
+		return _possibleConstructorReturn(this, (Bubble.__proto__ || Object.getPrototypeOf(Bubble)).apply(this, arguments));
+	}
 
-  _createClass(Bubble, [{
-    key: 'render',
-    value: function render() {
-      var _this18 = this;
+	_createClass(Bubble, [{
+		key: "render",
+		value: function render() {
+			var _this18 = this;
 
-      return _react2.default.createElement(ChartComponent, _extends({}, this.props, {
-        ref: function ref(_ref9) {
-          return _this18.chart_instance = _ref9 && _ref9.chart_instance;
-        },
-        type: 'bubble'
-      }));
-    }
-  }]);
+			return _react2.default.createElement(ChartComponent, _extends({}, this.props, {
+				ref: function ref(_ref9) {
+					return _this18.chart_instance = _ref9 && _ref9.chart_instance;
+				},
+				type: "bubble"
+			}));
+		}
+	}]);
 
-  return Bubble;
+	return Bubble;
 }(_react2.default.Component);
 
 var defaults = exports.defaults = _chart2.default.defaults;
 exports.Chart = _chart2.default;
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"lodash.isequal":4,"prop-types":8}]},{},[10])(10)
+},{"lodash.isequal":4,"moize":7,"prop-types":12}]},{},[14])(14)
 });
