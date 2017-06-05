@@ -1,9 +1,9 @@
-import React from "react";
-import PropTypes from "prop-types";
-import ReactDOM from "react-dom";
-import Chart from "chart.js";
-import isEqual from "lodash.isequal";
-import moize from "moize";
+import React from 'react';
+import PropTypes from 'prop-types';
+import ReactDOM from 'react-dom';
+import Chart from 'chart.js';
+import isEqual from 'lodash.isequal';
+import moize from 'moize';
 
 const datasetKeyProvider = d => d.label;
 const datasetKeyProviderMemoized = moize(datasetKeyProvider);

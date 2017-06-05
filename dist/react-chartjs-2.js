@@ -4050,7 +4050,7 @@ module.exports = ReactPropTypesSecret;
 
 },{}],14:[function(require,module,exports){
 (function (global){
-"use strict";
+'use strict';
 
 Object.defineProperty(exports, "__esModule", {
 	value: true
@@ -4065,7 +4065,7 @@ var _react = (typeof window !== "undefined" ? window['React'] : typeof global !=
 
 var _react2 = _interopRequireDefault(_react);
 
-var _propTypes = require("prop-types");
+var _propTypes = require('prop-types');
 
 var _propTypes2 = _interopRequireDefault(_propTypes);
 
@@ -4077,11 +4077,11 @@ var _chart = (typeof window !== "undefined" ? window['Chart'] : typeof global !=
 
 var _chart2 = _interopRequireDefault(_chart);
 
-var _lodash = require("lodash.isequal");
+var _lodash = require('lodash.isequal');
 
 var _lodash2 = _interopRequireDefault(_lodash);
 
-var _moize = require("moize");
+var _moize = require('moize');
 
 var _moize2 = _interopRequireDefault(_moize);
 
@@ -4146,24 +4146,24 @@ var ChartComponent = function (_React$Component) {
 	}
 
 	_createClass(ChartComponent, [{
-		key: "componentWillMount",
+		key: 'componentWillMount',
 		value: function componentWillMount() {
 			this.chart_instance = undefined;
 		}
 	}, {
-		key: "componentDidMount",
+		key: 'componentDidMount',
 		value: function componentDidMount() {
 			this.renderChart();
 		}
 	}, {
-		key: "componentWillUpdate",
+		key: 'componentWillUpdate',
 		value: function componentWillUpdate() {
 			if (this.props.redraw) {
 				this.chart_instance.destroy();
 			}
 		}
 	}, {
-		key: "componentDidUpdate",
+		key: 'componentDidUpdate',
 		value: function componentDidUpdate() {
 			if (this.props.redraw) {
 				this.renderChart();
@@ -4173,7 +4173,7 @@ var ChartComponent = function (_React$Component) {
 			this.updateChart();
 		}
 	}, {
-		key: "shouldComponentUpdate",
+		key: 'shouldComponentUpdate',
 		value: function shouldComponentUpdate(nextProps) {
 			var _props = this.props,
 			    redraw = _props.redraw,
@@ -4214,7 +4214,7 @@ var ChartComponent = function (_React$Component) {
 			return !(0, _lodash2.default)(plugins, nextProps.plugins);
 		}
 	}, {
-		key: "componentWillUnmount",
+		key: 'componentWillUnmount',
 		value: function componentWillUnmount() {
 			this.chart_instance.destroy();
 		}
@@ -4224,7 +4224,7 @@ var ChartComponent = function (_React$Component) {
 		// therefore we memoize the data prop while sending a fake to Chart.js for mutation.
 
 	}, {
-		key: "transformDataProp",
+		key: 'transformDataProp',
 		value: function transformDataProp(props) {
 			var data = props.data;
 
@@ -4239,7 +4239,7 @@ var ChartComponent = function (_React$Component) {
 		// see https://github.com/chartjs/Chart.js/blob/master/src/core/core.controller.js#L615-L617
 
 	}, {
-		key: "memoizeDataProps",
+		key: 'memoizeDataProps',
 		value: function memoizeDataProps() {
 			if (!this.props.data) {
 				return;
@@ -4256,7 +4256,7 @@ var ChartComponent = function (_React$Component) {
 			return data;
 		}
 	}, {
-		key: "updateChart",
+		key: 'updateChart',
 		value: function updateChart() {
 			var _this2 = this;
 
@@ -4302,7 +4302,7 @@ var ChartComponent = function (_React$Component) {
 						});
 
 						var _data = retainedDataset.data,
-						    otherProps = _objectWithoutProperties(retainedDataset, ["data"]);
+						    otherProps = _objectWithoutProperties(retainedDataset, ['data']);
 
 						currentDatasets[idx] = _extends({
 							data: currentDatasets[idx].data
@@ -4320,14 +4320,14 @@ var ChartComponent = function (_React$Component) {
 			});
 
 			var datasets = data.datasets,
-			    rest = _objectWithoutProperties(data, ["datasets"]);
+			    rest = _objectWithoutProperties(data, ['datasets']);
 
 			this.chart_instance.config.data = _extends({}, this.chart_instance.config.data, rest);
 
 			this.chart_instance.update();
 		}
 	}, {
-		key: "renderChart",
+		key: 'renderChart',
 		value: function renderChart() {
 			var _props2 = this.props,
 			    options = _props2.options,
@@ -4347,7 +4347,7 @@ var ChartComponent = function (_React$Component) {
 			});
 		}
 	}, {
-		key: "render",
+		key: 'render',
 		value: function render() {
 			var _props3 = this.props,
 			    height = _props3.height,
@@ -4355,7 +4355,7 @@ var ChartComponent = function (_React$Component) {
 			    onElementsClick = _props3.onElementsClick;
 
 
-			return _react2.default.createElement("canvas", {
+			return _react2.default.createElement('canvas', {
 				height: height,
 				width: width,
 				onClick: this.handleOnClick
@@ -4405,7 +4405,7 @@ var Doughnut = exports.Doughnut = function (_React$Component2) {
 	}
 
 	_createClass(Doughnut, [{
-		key: "render",
+		key: 'render',
 		value: function render() {
 			var _this4 = this;
 
@@ -4413,7 +4413,7 @@ var Doughnut = exports.Doughnut = function (_React$Component2) {
 				ref: function ref(_ref2) {
 					return _this4.chart_instance = _ref2 && _ref2.chart_instance;
 				},
-				type: "doughnut"
+				type: 'doughnut'
 			}));
 		}
 	}]);
@@ -4431,7 +4431,7 @@ var Pie = exports.Pie = function (_React$Component3) {
 	}
 
 	_createClass(Pie, [{
-		key: "render",
+		key: 'render',
 		value: function render() {
 			var _this6 = this;
 
@@ -4439,7 +4439,7 @@ var Pie = exports.Pie = function (_React$Component3) {
 				ref: function ref(_ref3) {
 					return _this6.chart_instance = _ref3 && _ref3.chart_instance;
 				},
-				type: "pie"
+				type: 'pie'
 			}));
 		}
 	}]);
@@ -4457,7 +4457,7 @@ var Line = exports.Line = function (_React$Component4) {
 	}
 
 	_createClass(Line, [{
-		key: "render",
+		key: 'render',
 		value: function render() {
 			var _this8 = this;
 
@@ -4465,7 +4465,7 @@ var Line = exports.Line = function (_React$Component4) {
 				ref: function ref(_ref4) {
 					return _this8.chart_instance = _ref4 && _ref4.chart_instance;
 				},
-				type: "line"
+				type: 'line'
 			}));
 		}
 	}]);
@@ -4483,7 +4483,7 @@ var Bar = exports.Bar = function (_React$Component5) {
 	}
 
 	_createClass(Bar, [{
-		key: "render",
+		key: 'render',
 		value: function render() {
 			var _this10 = this;
 
@@ -4491,7 +4491,7 @@ var Bar = exports.Bar = function (_React$Component5) {
 				ref: function ref(_ref5) {
 					return _this10.chart_instance = _ref5 && _ref5.chart_instance;
 				},
-				type: "bar"
+				type: 'bar'
 			}));
 		}
 	}]);
@@ -4509,7 +4509,7 @@ var HorizontalBar = exports.HorizontalBar = function (_React$Component6) {
 	}
 
 	_createClass(HorizontalBar, [{
-		key: "render",
+		key: 'render',
 		value: function render() {
 			var _this12 = this;
 
@@ -4517,7 +4517,7 @@ var HorizontalBar = exports.HorizontalBar = function (_React$Component6) {
 				ref: function ref(_ref6) {
 					return _this12.chart_instance = _ref6 && _ref6.chart_instance;
 				},
-				type: "horizontalBar"
+				type: 'horizontalBar'
 			}));
 		}
 	}]);
@@ -4535,7 +4535,7 @@ var Radar = exports.Radar = function (_React$Component7) {
 	}
 
 	_createClass(Radar, [{
-		key: "render",
+		key: 'render',
 		value: function render() {
 			var _this14 = this;
 
@@ -4543,7 +4543,7 @@ var Radar = exports.Radar = function (_React$Component7) {
 				ref: function ref(_ref7) {
 					return _this14.chart_instance = _ref7 && _ref7.chart_instance;
 				},
-				type: "radar"
+				type: 'radar'
 			}));
 		}
 	}]);
@@ -4561,7 +4561,7 @@ var Polar = exports.Polar = function (_React$Component8) {
 	}
 
 	_createClass(Polar, [{
-		key: "render",
+		key: 'render',
 		value: function render() {
 			var _this16 = this;
 
@@ -4569,7 +4569,7 @@ var Polar = exports.Polar = function (_React$Component8) {
 				ref: function ref(_ref8) {
 					return _this16.chart_instance = _ref8 && _ref8.chart_instance;
 				},
-				type: "polarArea"
+				type: 'polarArea'
 			}));
 		}
 	}]);
@@ -4587,7 +4587,7 @@ var Bubble = exports.Bubble = function (_React$Component9) {
 	}
 
 	_createClass(Bubble, [{
-		key: "render",
+		key: 'render',
 		value: function render() {
 			var _this18 = this;
 
@@ -4595,7 +4595,7 @@ var Bubble = exports.Bubble = function (_React$Component9) {
 				ref: function ref(_ref9) {
 					return _this18.chart_instance = _ref9 && _ref9.chart_instance;
 				},
-				type: "bubble"
+				type: 'bubble'
 			}));
 		}
 	}]);
